@@ -1,4 +1,3 @@
-# Aoc2019
+# 2019 Advent of Code
 
-**TODO: Add description**
-
+[Advent of Code (AOC)](http://adventofcode.com/2019) exercises in Elixir
