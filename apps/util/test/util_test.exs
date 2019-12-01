@@ -9,6 +9,6 @@ defmodule UtilTest do
 
   test "splits file on newlines into ints" do
     result = Util.split_file_to_ints("test/files/input.txt")
-    assert result == [80740, 103617, 86598, 135938, 98650]
+    assert result == [80740, 103_617, 86598, 135_938, 98650]
   end
 end

@@ -36,6 +36,7 @@ defmodule Day01 do
   end
 
   defp summed_fuel_acc(extra, total) when extra <= 0, do: total
+
   defp summed_fuel_acc(extra, total) do
     summed_fuel_acc(required_fuel(extra), total + extra)
   end
@@ -46,5 +47,4 @@ defmodule Day01 do
   def required_fuel(mass) do
     Integer.floor_div(mass, 3) - 2
   end
-
 end
