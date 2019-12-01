@@ -4,6 +4,13 @@ defmodule Util do
   """
 
   @doc """
+  Generate path string for a file in the /priv directory
+  """
+  def priv_file(app, file) do
+    Application.app_dir(app, "priv") |> Path.join(file)
+  end
+
+  @doc """
   Read a file into a list of strings
   """
   def split_file(file) do
