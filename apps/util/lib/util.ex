@@ -28,4 +28,25 @@ defmodule Util do
     split_file(file)
     |> Enum.map(&String.to_integer/1)
   end
+
+  @doc """
+  Read an IntCode file
+  """
+  @spec read_intcode(Path.t()) :: map()
+  def read_intcode(file) do
+    {:ok, contents} = File.read(file)
+    parse_intcode(contents)
+  end
+
+  @doc """
+  Parse an IntCode string
+  """
+  @spec parse_intcode(String.t()) :: map()
+  def parse_intcode(str) do
+    String.trim(str)
+    |>String.split(",", trim: true)
+    |> Enum.map(&String.to_integer/1)
+    |> Enum.with_index()
+    |> Enum.reduce(%{}, fn ({val, idx}, acc) -> Map.put(acc, idx, val) end)
+  end
 end
