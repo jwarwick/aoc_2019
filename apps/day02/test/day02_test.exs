@@ -2,6 +2,10 @@ defmodule Day02Test do
   use ExUnit.Case
   doctest Day02
 
+  test "part1" do
+    assert 3_895_705 == Day02.part1()
+  end
+
   test "sample programs" do
     run_prog("1,0,0,0,99", "2,0,0,0,99")
     run_prog("2,3,0,3,99", "2,3,0,6,99")

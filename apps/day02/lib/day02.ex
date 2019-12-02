@@ -10,10 +10,36 @@ defmodule Day02 do
     result =
       Util.priv_file(:day02, "day2_input.txt")
       |> Util.read_intcode()
-      |> Map.merge(%{1 => 12, 2 => 2})
-      |> run()
+      |> run(12, 2)
 
     result[0]
+  end
+
+  @doc """
+  Compute noun, verb value for Part 2 incode program
+  """
+  def part2 do
+    target = 19_690_720
+
+    prog =
+      Util.priv_file(:day02, "day2_input.txt")
+      |> Util.read_intcode()
+
+    steps = prog |> Map.keys() |> Enum.count()
+
+    for noun <- 0..(steps - 1) do
+      for verb <- 0..(steps - 1) do
+        result = run(prog, noun, verb)
+
+        if target == result[0] do
+          IO.puts("Found match. Noun=#{noun}, Verb=#{verb}")
+          ans = 100 * noun + verb
+          IO.puts("Answer: #{ans}")
+        end
+      end
+    end
+
+    IO.puts("Done")
   end
 
   @doc """
@@ -21,6 +47,14 @@ defmodule Day02 do
   """
   def run(prog) do
     step(0, prog)
+  end
+
+  @doc """
+  Execute an intcode program with noun, verb inputs
+  """
+  def run(prog, noun, verb) do
+    Map.merge(prog, %{1 => noun, 2 => verb})
+    |> run()
   end
 
   defp step(pc, prog) do
@@ -40,12 +74,14 @@ defmodule Day02 do
   # Add, Opcode 1
   defp eval(1, pc, prog) do
     {a, b, out} = get_args(pc, prog)
+    # IO.puts "Add #{a} + #{b} into #{out}"
     {:ok, Map.put(prog, out, a + b)}
   end
 
   # Multiply, Opcode 2
   defp eval(2, pc, prog) do
     {a, b, out} = get_args(pc, prog)
+    # IO.puts "Mult #{a} * #{b} into #{out}"
     {:ok, Map.put(prog, out, a * b)}
   end
 
