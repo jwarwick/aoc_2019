@@ -16,6 +16,16 @@ defmodule Day04 do
   end
 
   @doc """
+  Count the number of valid password possibilities
+  """
+  def part2 do
+    Enum.to_list(@first..@last)
+    |> Enum.filter(&valid?/1)
+    |> Enum.filter(&standalone_repeat?/1)
+    |> Enum.count()
+  end
+
+  @doc """
   Is the input password monotonic and containg at least one duplicate pair of numbers
   """
   def valid?(pass), do: monotonic?(pass) && has_repeat?(pass)
@@ -23,23 +33,26 @@ defmodule Day04 do
   @doc """
   Is the password monotonic
   """
-  def monotonic?(password), do: monotonic?(-1, Integer.digits(password))
-
-  defp monotonic?(_last, []), do: true
-  defp monotonic?(last, [head | tail]) when head >= last, do: monotonic?(head, tail)
-  defp monotonic?(_last, _list), do: false
+  def monotonic?(password) do
+    digits = Integer.digits(password)
+    digits == Enum.sort(digits)
+  end
 
   @doc """
   Does the password contain a repeated number
   """
   def has_repeat?(password) do
-    digits = [_head | tail] = Integer.digits(password)
-
-    Enum.zip(digits, tail)
-    |> match?()
+    Integer.digits(password)
+    |> Enum.chunk_by(& &1)
+    |> Enum.any?(&(Enum.count(&1) >= 2))
   end
 
-  defp match?([]), do: false
-  defp match?([{x, x} | _tail]), do: true
-  defp match?([_head | tail]), do: match?(tail)
+  @doc """
+  Does the password have repeated digits that are not part of a longer run of that digit
+  """
+  def standalone_repeat?(password) do
+    Integer.digits(password)
+    |> Enum.chunk_by(& &1)
+    |> Enum.any?(&(2 == Enum.count(&1)))
+  end
 end
