@@ -33,6 +33,7 @@ defmodule Util do
   Read an IntCode file
   """
   @spec read_intcode(Path.t()) :: map()
+  @deprecated "Use Intcode.read/1 instead"
   def read_intcode(file) do
     {:ok, contents} = File.read(file)
     parse_intcode(contents)
@@ -42,6 +43,7 @@ defmodule Util do
   Parse an IntCode string
   """
   @spec parse_intcode(String.t()) :: map()
+  @deprecated "Use Intcode.parse/1 instead"
   def parse_intcode(str) do
     String.trim(str)
     |>String.split(",", trim: true)
