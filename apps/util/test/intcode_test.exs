@@ -22,6 +22,11 @@ defmodule IntcodeTest do
     assert result[0] == 3500
   end
 
+  test "modes" do
+    run_prog("1002,4,3,4,33", "1002,4,3,4,99")
+    run_prog("1101,100,-1,4,0", "1101,100,-1,4,99")
+  end
+
   defp run_prog(input, output) do
     i = parse(input)
     o = parse(output)
