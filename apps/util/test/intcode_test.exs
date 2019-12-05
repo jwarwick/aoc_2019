@@ -5,7 +5,7 @@ defmodule IntcodeTest do
 
   test "load intcode" do
     result = load("test/files/intcode.txt")
-    assert result == %{ 0=>1, 1=>0, 2=>0, 3=>3, 4=>1}
+    assert result == %{0 => 1, 1 => 0, 2 => 0, 3 => 3, 4 => 1}
   end
 
   test "sample programs" do

@@ -46,9 +46,9 @@ defmodule Util do
   @deprecated "Use Intcode.parse/1 instead"
   def parse_intcode(str) do
     String.trim(str)
-    |>String.split(",", trim: true)
+    |> String.split(",", trim: true)
     |> Enum.map(&String.to_integer/1)
     |> Enum.with_index()
-    |> Enum.reduce(%{}, fn ({val, idx}, acc) -> Map.put(acc, idx, val) end)
+    |> Enum.reduce(%{}, fn {val, idx}, acc -> Map.put(acc, idx, val) end)
   end
 end

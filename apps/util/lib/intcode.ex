@@ -19,11 +19,11 @@ defmodule Intcode do
   """
   @spec parse(String.t()) :: map()
   def parse(str) do
-    String.trim(str)
-    |>String.split(",", trim: true)
+    String.replace(str, ~r/\s/, "")
+    |> String.split(",", trim: true)
     |> Enum.map(&String.to_integer/1)
     |> Enum.with_index()
-    |> Enum.reduce(%{}, fn ({val, idx}, acc) -> Map.put(acc, idx, val) end)
+    |> Enum.reduce(%{}, fn {val, idx}, acc -> Map.put(acc, idx, val) end)
   end
 
   @doc """
@@ -49,5 +49,4 @@ defmodule Intcode do
       {:ok, new_prog, new_input, new_pc} -> step(new_pc, new_prog, new_input)
     end
   end
-
 end
