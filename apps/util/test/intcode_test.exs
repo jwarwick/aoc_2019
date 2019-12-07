@@ -27,6 +27,28 @@ defmodule IntcodeTest do
     run_prog("1101,100,-1,4,0", "1101,100,-1,4,99")
   end
 
+  test "output" do
+    p = parse("3,9,8,9,10,9,4,9,99,-1,8")
+    s = self()
+    run(p, [1], nil, &(send(s, {:output, &1})))
+    assert_receive({:output, 0})
+
+    p = parse("3,3,1107,-1,8,3,4,3,99")
+    run(p, [1], nil, &(send(s, {:output, &1})))
+    assert_receive({:output, 1})
+  end
+
+  test "input" do
+    p = parse("3,9,8,9,10,9,4,9,99,-1,8")
+    s = self()
+    run(p, [], fn ()-> 1 end, &(send(s, {:output, &1})))
+    assert_receive({:output, 0})
+
+    p = parse("3,3,1107,-1,8,3,4,3,99")
+    run(p, [], fn () -> 1 end, &(send(s, {:output, &1})))
+    assert_receive({:output, 1})
+  end
+
   defp run_prog(input, output) do
     i = parse(input)
     o = parse(output)

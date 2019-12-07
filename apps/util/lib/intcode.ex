@@ -2,8 +2,7 @@ defmodule Intcode do
   @moduledoc """
   AoC 2019 Intcode emulator
   """
-
-  alias Intcode.Instruction
+  alias Intcode.State
 
   @doc """
   Read an IntCode file
@@ -29,24 +28,25 @@ defmodule Intcode do
   @doc """
   Execute an intcode program
   """
-  def run(prog, input \\ []) do
-    step(0, prog, input)
+  def run(prog, input \\ [], input_fn \\ nil, output_fn \\ &default_output/1) do
+    s = %State{prog: prog, input: input, input_fn: input_fn, output_fn: output_fn}
+    step(s)
   end
 
   @doc """
   Execute an intcode program with noun, verb inputs
   """
-  def run(prog, noun, verb) do
+  def run_noun_verb(prog, noun, verb) do
     Map.merge(prog, %{1 => noun, 2 => verb})
     |> run()
   end
 
-  defp step(pc, prog, input) do
-    op = Map.get(prog, pc)
-
-    case Instruction.evaluate(op, pc, prog, input) do
-      {:halt, new_prog, _new_input, _new_pc} -> new_prog
-      {:ok, new_prog, new_input, new_pc} -> step(new_pc, new_prog, new_input)
+  defp step(s = %State{}) do
+    case State.eval(s) do
+      {:halt, %State{prog: prog}} -> prog
+      {:ok, new_state} -> step(new_state)
     end
   end
+
+  defp default_output(v), do: IO.inspect(v)
 end

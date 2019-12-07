@@ -2,19 +2,18 @@ defmodule Intcode.Instruction do
   @moduledoc """
   Instructions used by the Intcode interpreter
   """
+  alias Intcode.State
 
-  # Halt, Opcode 99
   @doc """
   Evaluate a single instruction
   """
-  def evaluate(instruction, pc, prog, input) do
+  def evaluate(instruction, s = %State{}) do
     parse(instruction)
-    |> eval(pc, prog, input)
+    |> eval(s)
   end
 
   defp parse(instruction), do: Integer.digits(instruction) |> parse_opcode()
 
-  defp parse_opcode([9, 9]), do: {op_code(99), []}
   defp parse_opcode([x]), do: {op_code(x), []}
   defp parse_opcode([0, x]), do: {op_code(x), []}
 
@@ -32,114 +31,92 @@ defmodule Intcode.Instruction do
     {op, modes}
   end
 
-  defp mode(0), do: :position
-  defp mode(1), do: :immediate
-
-  # Halt, Opcode 99
-  defp eval({:halt, _modes}, pc, prog, input) do
-    {:halt, prog, input, pc + 1}
-  end
-
   # Add, Opcode 1
-  defp eval({:add, modes}, pc, prog, input) do
+  defp eval({:add, modes}, s = %State{pc: pc, prog: prog}) do
     a = get_arg(1, pc, prog, modes)
     b = get_arg(2, pc, prog, modes)
     out = prog[pc + 3]
-    {:ok, Map.put(prog, out, a + b), input, pc + 4}
+    {:ok, State.update(s, %{prog: Map.put(prog, out, a + b), pc: pc + 4})}
   end
 
   # Multiply, Opcode 2
-  defp eval({:multiply, modes}, pc, prog, input) do
+  defp eval({:multiply, modes}, s = %State{pc: pc, prog: prog}) do
     a = get_arg(1, pc, prog, modes)
     b = get_arg(2, pc, prog, modes)
     out = prog[pc + 3]
-    {:ok, Map.put(prog, out, a * b), input, pc + 4}
+    {:ok, State.update(s, %{prog: Map.put(prog, out, a * b), pc: pc + 4})}
   end
 
   # Input, Opcode 3
-  defp eval({:input, _modes}, pc, prog, [head | tail]) do
+  defp eval({:input, _modes}, s = %State{pc: pc, prog: prog, input: [head | tail]}) do
     out = prog[pc + 1]
-    {:ok, Map.put(prog, out, head), tail, pc + 2}
+    {:ok, State.update(s, %{prog: Map.put(prog, out, head), input: tail, pc: pc + 2})}
   end
 
-  defp eval({:input, _modes}, pc, prog, input) do
+  defp eval({:input, _modes}, s = %State{pc: pc, prog: prog, input_fn: f}) do
+    out = prog[pc + 1]
+    {:ok, State.update(s, %{prog: Map.put(prog, out, f.()), pc: pc + 2})}
+  end
+
+  defp eval({:input, _modes}, s = %State{pc: pc, input_fn: nil}) do
     IO.puts("Error: Input opcode used without any input specified @ pc #{pc}")
-    {:halt, prog, input, pc + 2}
+    {:halt, s}
   end
 
   # Output, Opcode 4
-  defp eval({:output, modes}, pc, prog, input) do
+  defp eval({:output, modes}, s = %State{pc: pc, prog: prog, output_fn: f}) do
     a = get_arg(1, pc, prog, modes)
-    IO.inspect(a)
-    {:ok, prog, input, pc + 2}
+    f.(a)
+    {:ok, State.update(s, %{pc: pc + 2})}
   end
 
   # Jump if True, Opcode 5
-  defp eval({:jump_if_true, modes}, pc, prog, input) do
+  defp eval({:jump_if_true, modes}, s = %State{pc: pc, prog: prog}) do
     a = get_arg(1, pc, prog, modes)
     b = get_arg(2, pc, prog, modes)
 
-    new_pc =
-      if a != 0 do
-        b
-      else
-        pc + 3
-      end
-
-    {:ok, prog, input, new_pc}
+    new_pc = if a != 0, do: b, else: pc + 3
+    {:ok, State.update(s, %{pc: new_pc})}
   end
 
   # Jump if False, Opcode 6
-  defp eval({:jump_if_false, modes}, pc, prog, input) do
+  defp eval({:jump_if_false, modes}, s = %State{pc: pc, prog: prog}) do
     a = get_arg(1, pc, prog, modes)
     b = get_arg(2, pc, prog, modes)
 
-    new_pc =
-      if a == 0 do
-        b
-      else
-        pc + 3
-      end
-
-    {:ok, prog, input, new_pc}
+    new_pc = if a == 0, do: b, else: pc + 3
+    {:ok, State.update(s, %{pc: new_pc})}
   end
 
   # Less Than, Opcode 7
-  defp eval({:less_than, modes}, pc, prog, input) do
+  defp eval({:less_than, modes}, s = %State{pc: pc, prog: prog}) do
     a = get_arg(1, pc, prog, modes)
     b = get_arg(2, pc, prog, modes)
     out = prog[pc + 3]
 
-    val =
-      if a < b do
-        1
-      else
-        0
-      end
-
-    {:ok, Map.put(prog, out, val), input, pc + 4}
+    val = if a < b, do: 1, else: 0
+    {:ok, State.update(s, %{prog: Map.put(prog, out, val), pc: pc + 4})}
   end
 
-  # Equals, Opcode 7
-  defp eval({:equals, modes}, pc, prog, input) do
+  # Equals, Opcode 8
+  defp eval({:equals, modes}, s = %State{pc: pc, prog: prog}) do
     a = get_arg(1, pc, prog, modes)
     b = get_arg(2, pc, prog, modes)
     out = prog[pc + 3]
 
-    val =
-      if a == b do
-        1
-      else
-        0
-      end
+    val = if a == b, do: 1, else: 0
+    {:ok, State.update(s, %{prog: Map.put(prog, out, val), pc: pc + 4})}
+  end
 
-    {:ok, Map.put(prog, out, val), input, pc + 4}
+  # Halt, Opcode 99
+  defp eval({:halt, _modes}, s = %State{pc: pc}) do
+    {:halt, State.update(s, %{pc: pc + 1})}
   end
 
   # Unknown opcode
-  defp eval({op, _modes}, pc, prog, input) do
+  defp eval({op, _modes}, s = %State{pc: pc}) do
     IO.puts("Error: Unknown opcode #{inspect(op)} @ #{pc}")
-    {:halt, prog, input, pc + 4}
+    {:halt, s}
   end
 
   # 1-indexed arguments, eg. first argument = 1
@@ -150,16 +127,20 @@ defmodule Intcode.Instruction do
     end
   end
 
-  @op_codes %{
-    1 => :add,
-    2 => :multiply,
-    3 => :input,
-    4 => :output,
-    5 => :jump_if_true,
-    6 => :jump_if_false,
-    7 => :less_than,
-    8 => :equals,
-    99 => :halt
-  }
-  defp op_code(x), do: @op_codes[x]
+  defp mode(0), do: :position
+  defp mode(1), do: :immediate
+
+  @op_codes  [
+    {1, :add},
+    {2, :multiply},
+    {3, :input},
+    {4, :output},
+    {5, :jump_if_true},
+    {6, :jump_if_false},
+    {7, :less_than},
+    {8, :equals},
+    {99, :halt}]
+  for {n, i} <- @op_codes do
+    defp op_code(unquote(n)), do: unquote(i)
+  end
 end
