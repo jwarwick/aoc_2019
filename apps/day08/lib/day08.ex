@@ -15,6 +15,14 @@ defmodule Day08 do
   end
 
   @doc """
+  Generate the image
+  """
+  def part2 do
+    parse()
+    |> render(@width, @height)
+  end
+
+  @doc """
   Parse the input
   """
   def parse() do
@@ -45,5 +53,18 @@ defmodule Day08 do
     ones = Enum.count(l, &(&1 == 1))
     twos = Enum.count(l, &(&1 == 2))
     ones * twos
+  end
+
+  @doc """
+  Collapse the layers to render the final image
+  """
+  def render(layers, width, _height) do
+    Enum.reduce(layers, &collapse/2)
+    |> Enum.chunk_every(width)
+  end
+
+  defp collapse(layer, img) do
+    Enum.zip(img, layer)
+    |> Enum.map(fn {i, l} -> if i == 2, do: l, else: i end)
   end
 end
