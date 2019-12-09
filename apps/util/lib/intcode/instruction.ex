@@ -33,16 +33,16 @@ defmodule Intcode.Instruction do
 
   # Add, Opcode 1
   defp eval({:add, modes}, s = %State{pc: pc, prog: prog}) do
-    a = get_arg(1, pc, prog, modes)
-    b = get_arg(2, pc, prog, modes)
+    a = get_arg(1, pc, prog, modes, s)
+    b = get_arg(2, pc, prog, modes, s)
     out = prog[pc + 3]
     {:ok, State.update(s, %{prog: Map.put(prog, out, a + b), pc: pc + 4})}
   end
 
   # Multiply, Opcode 2
   defp eval({:multiply, modes}, s = %State{pc: pc, prog: prog}) do
-    a = get_arg(1, pc, prog, modes)
-    b = get_arg(2, pc, prog, modes)
+    a = get_arg(1, pc, prog, modes, s)
+    b = get_arg(2, pc, prog, modes, s)
     out = prog[pc + 3]
     {:ok, State.update(s, %{prog: Map.put(prog, out, a * b), pc: pc + 4})}
   end
@@ -65,15 +65,15 @@ defmodule Intcode.Instruction do
 
   # Output, Opcode 4
   defp eval({:output, modes}, s = %State{pc: pc, prog: prog, output_fn: f}) do
-    a = get_arg(1, pc, prog, modes)
+    a = get_arg(1, pc, prog, modes, s)
     f.(a)
     {:ok, State.update(s, %{pc: pc + 2})}
   end
 
   # Jump if True, Opcode 5
   defp eval({:jump_if_true, modes}, s = %State{pc: pc, prog: prog}) do
-    a = get_arg(1, pc, prog, modes)
-    b = get_arg(2, pc, prog, modes)
+    a = get_arg(1, pc, prog, modes, s)
+    b = get_arg(2, pc, prog, modes, s)
 
     new_pc = if a != 0, do: b, else: pc + 3
     {:ok, State.update(s, %{pc: new_pc})}
@@ -81,8 +81,8 @@ defmodule Intcode.Instruction do
 
   # Jump if False, Opcode 6
   defp eval({:jump_if_false, modes}, s = %State{pc: pc, prog: prog}) do
-    a = get_arg(1, pc, prog, modes)
-    b = get_arg(2, pc, prog, modes)
+    a = get_arg(1, pc, prog, modes, s)
+    b = get_arg(2, pc, prog, modes, s)
 
     new_pc = if a == 0, do: b, else: pc + 3
     {:ok, State.update(s, %{pc: new_pc})}
@@ -90,8 +90,8 @@ defmodule Intcode.Instruction do
 
   # Less Than, Opcode 7
   defp eval({:less_than, modes}, s = %State{pc: pc, prog: prog}) do
-    a = get_arg(1, pc, prog, modes)
-    b = get_arg(2, pc, prog, modes)
+    a = get_arg(1, pc, prog, modes, s)
+    b = get_arg(2, pc, prog, modes, s)
     out = prog[pc + 3]
 
     val = if a < b, do: 1, else: 0
@@ -100,12 +100,18 @@ defmodule Intcode.Instruction do
 
   # Equals, Opcode 8
   defp eval({:equals, modes}, s = %State{pc: pc, prog: prog}) do
-    a = get_arg(1, pc, prog, modes)
-    b = get_arg(2, pc, prog, modes)
+    a = get_arg(1, pc, prog, modes, s)
+    b = get_arg(2, pc, prog, modes, s)
     out = prog[pc + 3]
 
     val = if a == b, do: 1, else: 0
     {:ok, State.update(s, %{prog: Map.put(prog, out, val), pc: pc + 4})}
+  end
+
+  # Adjust Relative Base, Opcode 9
+  defp eval({:adjust_base, modes}, s = %State{pc: pc, prog: prog, relative_base: base}) do
+    a = get_arg(1, pc, prog, modes, s)
+    {:ok, State.update(s, %{relative_base: base + a, pc: pc + 2})}
   end
 
   # Halt, Opcode 99
@@ -120,15 +126,17 @@ defmodule Intcode.Instruction do
   end
 
   # 1-indexed arguments, eg. first argument = 1
-  defp get_arg(arg, pc, prog, modes) do
+  defp get_arg(arg, pc, prog, modes, %State{relative_base: base}) do
     case Enum.at(modes, arg - 1, :position) do
-      :immediate -> prog[pc + arg]
-      :position -> prog[prog[pc + arg]]
+      :immediate -> Map.get(prog, pc + arg, 0)
+      :position -> Map.get(prog, Map.get(prog, pc + arg, 0), 0)
+      :relative -> Map.get(prog, Map.get(prog, pc + arg, 0) + base, 0)
     end
   end
 
   defp mode(0), do: :position
   defp mode(1), do: :immediate
+  defp mode(2), do: :relative
 
   @op_codes  [
     {1, :add},
@@ -139,6 +147,7 @@ defmodule Intcode.Instruction do
     {6, :jump_if_false},
     {7, :less_than},
     {8, :equals},
+    {9, :adjust_base},
     {99, :halt}]
   for {n, i} <- @op_codes do
     defp op_code(unquote(n)), do: unquote(i)

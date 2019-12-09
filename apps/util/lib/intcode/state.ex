@@ -10,7 +10,8 @@ defmodule Intcode.State do
     prog: %{},
     input: [],
     input_fn: nil,
-    output_fn: nil
+    output_fn: nil,
+    relative_base: 0,
   ]
 
   @doc """
