@@ -35,7 +35,7 @@ defmodule Intcode.Instruction do
   defp eval({:add, modes}, s = %State{pc: pc, prog: prog}) do
     a = get_arg(1, pc, prog, modes, s)
     b = get_arg(2, pc, prog, modes, s)
-    out = prog[pc + 3]
+    out = get_out(3, pc, prog, modes, s)
     {:ok, State.update(s, %{prog: Map.put(prog, out, a + b), pc: pc + 4})}
   end
 
@@ -43,23 +43,24 @@ defmodule Intcode.Instruction do
   defp eval({:multiply, modes}, s = %State{pc: pc, prog: prog}) do
     a = get_arg(1, pc, prog, modes, s)
     b = get_arg(2, pc, prog, modes, s)
-    out = prog[pc + 3]
+    out = get_out(3, pc, prog, modes, s)
+
     {:ok, State.update(s, %{prog: Map.put(prog, out, a * b), pc: pc + 4})}
   end
 
   # Input, Opcode 3
-  defp eval({:input, _modes}, s = %State{pc: pc, prog: prog, input: [head | tail]}) do
-    out = prog[pc + 1]
+  defp eval({:input, modes}, s = %State{pc: pc, prog: prog, input: [head | tail]}) do
+    out = get_out(1, pc, prog, modes, s)
     {:ok, State.update(s, %{prog: Map.put(prog, out, head), input: tail, pc: pc + 2})}
   end
 
-  defp eval({:input, _modes}, s = %State{pc: pc, prog: prog, input_fn: f}) do
-    out = prog[pc + 1]
+  defp eval({:input, modes}, s = %State{pc: pc, prog: prog, input_fn: f}) do
+    out = get_out(1, pc, prog, modes, s)
     {:ok, State.update(s, %{prog: Map.put(prog, out, f.()), pc: pc + 2})}
   end
 
   defp eval({:input, _modes}, s = %State{pc: pc, input_fn: nil}) do
-    IO.puts("Error: Input opcode used without any input specified @ pc #{pc}")
+    IO.puts("Error: Input opcode used without any input specified @ pc #{inspect pc}")
     {:halt, s}
   end
 
@@ -92,7 +93,7 @@ defmodule Intcode.Instruction do
   defp eval({:less_than, modes}, s = %State{pc: pc, prog: prog}) do
     a = get_arg(1, pc, prog, modes, s)
     b = get_arg(2, pc, prog, modes, s)
-    out = prog[pc + 3]
+    out = get_out(3, pc, prog, modes, s)
 
     val = if a < b, do: 1, else: 0
     {:ok, State.update(s, %{prog: Map.put(prog, out, val), pc: pc + 4})}
@@ -102,7 +103,7 @@ defmodule Intcode.Instruction do
   defp eval({:equals, modes}, s = %State{pc: pc, prog: prog}) do
     a = get_arg(1, pc, prog, modes, s)
     b = get_arg(2, pc, prog, modes, s)
-    out = prog[pc + 3]
+    out = get_out(3, pc, prog, modes, s)
 
     val = if a == b, do: 1, else: 0
     {:ok, State.update(s, %{prog: Map.put(prog, out, val), pc: pc + 4})}
@@ -131,6 +132,15 @@ defmodule Intcode.Instruction do
       :immediate -> Map.get(prog, pc + arg, 0)
       :position -> Map.get(prog, Map.get(prog, pc + arg, 0), 0)
       :relative -> Map.get(prog, Map.get(prog, pc + arg, 0) + base, 0)
+    end
+  end
+
+  # 1-indexed arguments, eg. first argument = 1
+  defp get_out(arg, pc, prog, modes, %State{relative_base: base}) do
+    case Enum.at(modes, arg - 1, :position) do
+      :immediate -> Map.get(prog, pc + arg, 0)
+      :position -> Map.get(prog, pc + arg, 0)
+      :relative -> Map.get(prog, pc + arg, 0) + base
     end
   end
 

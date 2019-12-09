@@ -50,10 +50,11 @@ defmodule IntcodeTest do
   end
 
   test "relative mode" do
+    s = self()
+
     str = "109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99"
     nums = String.split(str, ",") |> Enum.map(&String.to_integer/1)
     p = parse(str)
-    s = self()
     run(p, [], nil, &(send(s, {:output, &1})))
     for v <- nums do
       assert_receive({:output, ^v})
@@ -68,6 +69,11 @@ defmodule IntcodeTest do
     receive do
       {:output, num} -> assert 16 == Enum.count(Integer.digits(num))
     end
+
+    p = parse("109,2000,103,1985,109,19,204,-34,99")
+    # value at address 1985 will be output, which we read as input
+    run(p, [17], nil, &(send(s, {:output, &1})))
+    assert_receive({:output, 17})
   end
 
   defp run_prog(input, output) do
