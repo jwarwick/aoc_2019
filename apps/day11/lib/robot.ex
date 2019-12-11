@@ -6,16 +6,34 @@ defmodule Robot do
   defstruct heading: :up, position: {0, 0}, panels: %{}, next_input: :paint
 
   @black 0
-  # @white 1
+  @white 1
 
   @left  0
   @right 1
 
+  def print(map) do
+    pts = Map.keys(map)
+
+    {min_x, max_x} = Enum.map(pts, fn {x, _y} -> x end) |> Enum.min_max()
+    {min_y, max_y} = Enum.map(pts, fn {_x, y} -> y end) |> Enum.min_max()
+
+    for y <- max_y..min_y do
+      for x <- min_x..max_x do
+        print_char(Map.get(map, {x,y}, @black))
+      end
+      IO.write("\n")
+    end
+    :ok
+  end
+
+  defp print_char(@black), do: IO.write(".")
+  defp print_char(@white), do: IO.write("#")
+
   @doc """
   Use an Intcode program to cause the robot to paint
   """
-  def paint(str) do
-    {:ok, _pid} = Agent.start_link(fn -> %Robot{} end, name: __MODULE__)
+  def paint(str, panels \\ %{}) do
+    {:ok, _pid} = Agent.start_link(fn -> %Robot{panels: panels} end, name: __MODULE__)
     code = Intcode.load(str)
     Intcode.run(code, [], &camera/0, &action/1)
     panels = Agent.get(__MODULE__, fn state -> state.panels end)
