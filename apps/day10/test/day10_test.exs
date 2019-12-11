@@ -76,8 +76,32 @@ defmodule Day10Test do
   end
 
   test "vaporize" do
-    s = Day10.parse(@ex5) |> Day10.find_neighbors()
+    s = Day10.parse(@ex5) 
     assert 802 == Day10.vaporize_checksum(s, 200)
+  end
+
+  # with additional South asteroids
+  @part2ex """
+  .#....#####...#..
+  ##...##.#####..##
+  ##...#...#.#####.
+  ..#.....X...###..
+  ..#.#...#.#....##
+  """
+  test "laser sample" do
+    order = [801, 900, 901, 1000, 902, 1101, 1201, 1102, 1501,
+             1202, 1302, 1402, 1502, 1203, 1604, 1504, 1004, 804, 404,
+             204, 203, 2, 102, 1, 101, 502, 100, 501,
+             601, 600, 700, 800, 1001, 1400, 1601, 1303, 1403
+    ]
+    for i <- 1..Enum.count(order) do
+      assert {i, Enum.at(order, i-1)} == {i, test_vape(i)}
+    end
+  end
+
+  def test_vape(cnt) do
+    Day10.parse(@part2ex)
+    |> Day10.vaporize_checksum({8,3}, cnt)
   end
 
 end
