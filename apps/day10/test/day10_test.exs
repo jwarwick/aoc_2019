@@ -70,4 +70,14 @@ defmodule Day10Test do
     assert a[{11, 13}] == 210
     assert 210 = Day10.best(s)
   end
+
+  test "part1" do
+    assert 247 == Day10.part1()
+  end
+
+  test "vaporize" do
+    s = Day10.parse(@ex5) |> Day10.find_neighbors()
+    assert 802 == Day10.vaporize_checksum(s, 200)
+  end
+
 end

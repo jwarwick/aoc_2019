@@ -33,6 +33,13 @@ defmodule Day10 do
   end
 
   @doc """
+  Compute the checksum of the nth vaporized asteroid
+  """
+  def vaporize_checksum(map, cnt) do
+    0
+  end
+
+  @doc """
   Return the number visible at the best position
   """
   def best(map) do
