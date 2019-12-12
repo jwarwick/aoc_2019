@@ -15,9 +15,16 @@ defmodule Day12 do
   end
 
   @doc """
+  Find the period of the system
+  """
+  def part2 do
+    period(@input)
+  end
+
+  @doc """
   Compute the total energy of a system
   """
-  def total_energy(system) do
+  def total_energy({system, _acc}) do
     Enum.reduce(system, 0, fn ({v, p}, acc) -> acc + (energy(v) * energy(p)) end)
   end
 
@@ -27,15 +34,15 @@ defmodule Day12 do
   Simulate system for a number of steps
   """
   def simulate(pos, steps) do
-    Enum.zip(pos, Stream.cycle([{0, 0, 0}]))
-    |> sim2(steps)
+    start = Enum.zip(pos, Stream.cycle([{0, 0, 0}]))
+    sim2(start, steps, [start])
   end
 
-  defp sim2(pos, 0), do: pos
-  defp sim2(pos, steps) do
-    Enum.map(pos, &(gravity(&1, pos, &1)))
-    |> Enum.map(&(velocity(&1)))
-    |> sim2(steps-1)
+  defp sim2(pos, 0, acc), do: {pos, Enum.reverse(acc)}
+  defp sim2(pos, steps, acc) do
+    new_pos = Enum.map(pos, &(gravity(&1, pos, &1)))
+              |> Enum.map(&(velocity(&1)))
+    sim2(new_pos, steps-1, [new_pos | acc])
   end
 
   defp velocity({{x, y, z}, v={vx, vy, vz}}), do: {{x+vx, y+vy, z+vz}, v}
@@ -48,5 +55,26 @@ defmodule Day12 do
   defp delta(c, p) when c < p, do: 1
   defp delta(c, p) when c > p, do: -1
   defp delta(_, _), do: 0
+
+  def period(pos, steps \\ 500000) do
+    {_r, acc} = simulate(pos, steps)
+    x = axis_repeat(0, acc)
+    y = axis_repeat(1, acc)
+    z = axis_repeat(2, acc)
+    Math.lcm(x, Math.lcm(y, z))
+  end
+
+  def axis_repeat(idx, acc) do
+    [first | rest] = axis(idx, acc)
+    1 + Enum.find_index(rest, &(&1 == first))
+  end
+
+  def axis(idx, acc) do
+    Enum.map(acc, &(get_nth(&1, idx)))
+  end
+
+  defp get_nth(acc, n) do
+    Enum.map(acc, fn {p, v} -> {elem(p, n), elem(v, n)} end)
+  end
 
 end
