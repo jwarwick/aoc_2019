@@ -3,9 +3,9 @@ defmodule Game do
   Intcode Arcade Cabinet
   """
 
-  defstruct tiles: %{}, output: []
+  defstruct tiles: %{}, score: 0, output: []
 
-  def print(map) do
+  def print({map, score}) do
     pts = Map.keys(map)
 
     {min_x, max_x} = Enum.map(pts, fn {x, _y} -> x end) |> Enum.min_max()
@@ -17,6 +17,7 @@ defmodule Game do
       end
       IO.write("\n")
     end
+    IO.puts "SCORE: #{score}"
     :ok
   end
 
@@ -29,13 +30,25 @@ defmodule Game do
   @doc """
   Run the arcade game
   """
-  def play(str, tiles \\ %{}) do
-    {:ok, _pid} = Agent.start_link(fn -> %Game{tiles: tiles} end, name: __MODULE__)
-    code = Intcode.load(str)
-    Intcode.run(code, [], nil, &output/1)
-    tiles = Agent.get(__MODULE__, fn state -> state.tiles end)
+  def play(str, quarters \\ 1)do
+    {:ok, _pid} = Agent.start_link(fn -> %Game{} end, name: __MODULE__)
+    code = Intcode.load(str) |> Intcode.poke(0, quarters)
+    Intcode.run(code, [], &input/0, &output/1)
+    result = Agent.get(__MODULE__, fn state -> {state.tiles, state.score} end)
     Agent.stop(__MODULE__)
-    tiles
+    result
+  end
+
+  def input do
+    {bx, _by} = find_item(:ball)
+    {px, _py} = find_item(:paddle)
+    bx - px
+  end
+
+  def find_item(item) do
+    Agent.get(__MODULE__, fn state -> state.tiles end)
+    |> Enum.find(fn {_k, v} -> v == item end)
+    |> elem(0)
   end
 
   def output(cmd) do
@@ -48,6 +61,14 @@ defmodule Game do
 
   def output(cmd, curr_output) do
     [x, y, type] = [cmd | curr_output] |> Enum.reverse()
+    output(x, y, type)
+  end
+
+  def output(-1, 0, score) do
+    Agent.update(__MODULE__, fn state -> %Game{state | score: score, output: []} end)
+  end
+
+  def output(x, y, type) do
     kind = tile(type)
     tiles = Agent.get(__MODULE__, fn state -> state.tiles end)
     tiles = Map.put(tiles, {x, y}, kind)

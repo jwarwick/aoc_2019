@@ -26,6 +26,13 @@ defmodule Intcode do
   end
 
   @doc """
+  Write to a program memory location
+  """
+  def poke(prog, addr, val) do
+    Map.put(prog, addr, val)
+  end
+
+  @doc """
   Execute an intcode program
   """
   def run(prog, input \\ [], input_fn \\ nil, output_fn \\ &default_output/1) do
