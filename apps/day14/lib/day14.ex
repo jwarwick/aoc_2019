@@ -17,12 +17,65 @@ defmodule Day14 do
   end
 
   @doc """
+  Compute the max fuel that can be produced with 1 trillion ore
+  """
+  def part2 do
+    Util.priv_file(:day14, "day14_input.txt")
+    |> File.read!()
+    |> max_fuel()
+  end
+
+  @doc """
+  Compute maximum fuel that can be produced with 1 trillion ore
+  """
+  def max_fuel(str) do
+    rules = parse_str(str)
+    binary_search(rules, run(rules, 1), run(rules, 50_000_000_000))
+  end
+
+  defp run(rules, target) do
+    result =
+      generate(
+        rules,
+        rules,
+        %State{need: %{FUEL: target}, stock: %{ORE: 100_000_000_000_000_000_000}},
+        %State{ore_used: 300_000_000_000_0000}
+      )
+
+    ore = Map.get(result, :ore_used)
+    {target, ore}
+  end
+
+  @cargo_ore 1_000_000_000_000
+
+  def binary_search(_rules, {low_fuel, _low_ore}, {high_fuel, _high_ore})
+      when low_fuel >= high_fuel do
+    low_fuel
+  end
+
+  def binary_search(rules, low = {low_fuel, _low_ore}, high = {high_fuel, _high_ore}) do
+    target = low_fuel + Integer.floor_div(high_fuel - low_fuel, 2)
+
+    if low_fuel == target do
+      low_fuel
+    else
+      new = {_actual, ore} = run(rules, target)
+
+      cond do
+        ore == @cargo_ore -> target
+        ore < @cargo_ore -> binary_search(rules, new, high)
+        ore > @cargo_ore -> binary_search(rules, low, new)
+      end
+    end
+  end
+
+  @doc """
   Compute the minimum required ore to produce 1 fuel from the given machine
   """
   def min_ore(str) do
     rules = parse_str(str)
 
-    generate(rules, rules, %State{need: %{FUEL: 1}, stock: %{ORE: 1_000_000_000_000}}, %State{
+    generate(rules, rules, %State{need: %{FUEL: 1}, stock: %{ORE: 100_000_000_000_000}}, %State{
       ore_used: 300_000_000
     })
     |> Map.get(:ore_used)
@@ -38,9 +91,7 @@ defmodule Day14 do
     |> Enum.map(fn [h | rest] -> {rest, h} end)
   end
 
-  defp generate(_a, _c, %State{ore_used: curr}, b = %State{ore_used: best}) when curr > best,
-    do: b
-
+  defp generate(_a, _c, %State{ore_used: c}, best = %State{ore_used: b}) when c > b, do: best
   defp generate(_all_rules, _curr_rules, s = %State{need: n}, _best) when map_size(n) == 0, do: s
   defp generate(_all_rules, [], _curr, _best), do: nil
 

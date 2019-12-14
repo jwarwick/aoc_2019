@@ -2,6 +2,10 @@ defmodule Day14Test do
   use ExUnit.Case
   doctest Day14
 
+  test "part1" do
+    assert Day14.part1() == 278_404
+  end
+
   @ex1 """
   10 ORE => 10 A
   1 ORE => 1 B
@@ -40,6 +44,7 @@ defmodule Day14Test do
   """
   test "ex3" do
     assert Day14.min_ore(@ex3) == 13312
+    assert Day14.max_fuel(@ex3) == 82_892_753
   end
 
   @ex4 """
@@ -58,6 +63,7 @@ defmodule Day14Test do
   """
   test "ex4" do
     assert Day14.min_ore(@ex4) == 180_697
+    assert Day14.max_fuel(@ex4) == 5_586_022
   end
 
   @ex5 """
@@ -81,5 +87,6 @@ defmodule Day14Test do
   """
   test "ex5" do
     assert Day14.min_ore(@ex5) == 2_210_736
+    assert Day14.max_fuel(@ex5) == 460_664
   end
 end
