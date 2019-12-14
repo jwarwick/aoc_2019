@@ -3,7 +3,7 @@ defmodule Game do
   Intcode Arcade Cabinet
   """
 
-  defstruct tiles: %{}, score: 0, output: []
+  defstruct tiles: %{}, score: 0, output: [], window: nil
 
   def print({map, score}) do
     pts = Map.keys(map)
@@ -13,7 +13,7 @@ defmodule Game do
 
     for y <- min_y..max_y do
       for x <- min_x..max_x do
-        print_char(Map.get(map, {x,y}, :empty))
+        IO.write(print_char(Map.get(map, {x,y}, :empty)))
       end
       IO.write("\n")
     end
@@ -21,25 +21,46 @@ defmodule Game do
     :ok
   end
 
-  defp print_char(:empty), do: IO.write(" ")
-  defp print_char(:wall), do: IO.write("=")
-  defp print_char(:block), do: IO.write("#")
-  defp print_char(:paddle), do: IO.write("_")
-  defp print_char(:ball), do: IO.write("*")
+  defp print_char(:empty), do: " "
+  defp print_char(:wall), do: "="
+  defp print_char(:block), do: "#"
+  defp print_char(:paddle), do: "_"
+  defp print_char(:ball), do: "*"
+
+  def render({map, score}) do
+    ExNcurses.clear()
+    pts = Map.keys(map)
+
+    {min_x, max_x} = Enum.map(pts, fn {x, _y} -> x end) |> Enum.min_max()
+    {min_y, max_y} = Enum.map(pts, fn {_x, y} -> y end) |> Enum.min_max()
+
+    for y <- min_y..max_y do
+      for x <- min_x..max_x do
+        ExNcurses.mvaddstr(y, x, print_char(Map.get(map, {x,y}, :empty)))
+      end
+    end
+    ExNcurses.mvaddstr(max_y + 5, 0, "Score: #{score}")
+    ExNcurses.refresh()
+  end
 
   @doc """
   Run the arcade game
   """
   def play(str, quarters \\ 1)do
-    {:ok, _pid} = Agent.start_link(fn -> %Game{} end, name: __MODULE__)
+    ExNcurses.initscr()
+    win = ExNcurses.newwin(100, 100, 1, 0)
+    {:ok, _pid} = Agent.start_link(fn -> %Game{window: win} end, name: __MODULE__)
     code = Intcode.load(str) |> Intcode.poke(0, quarters)
     Intcode.run(code, [], &input/0, &output/1)
     result = Agent.get(__MODULE__, fn state -> {state.tiles, state.score} end)
     Agent.stop(__MODULE__)
+    ExNcurses.endwin()
     result
   end
 
   def input do
+    state = Agent.get(__MODULE__, fn state -> {state.tiles, state.score} end)
+    render(state) 
     {bx, _by} = find_item(:ball)
     {px, _py} = find_item(:paddle)
     bx - px
