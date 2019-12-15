@@ -56,7 +56,10 @@ defmodule Intcode.Instruction do
 
   defp eval({:input, modes}, s = %State{pc: pc, prog: prog, input_fn: f}) do
     out = get_out(1, pc, prog, modes, s)
-    {:ok, State.update(s, %{prog: Map.put(prog, out, f.()), pc: pc + 2})}
+    case f.() do
+      :halt -> {:halt, s}
+      val -> {:ok, State.update(s, %{prog: Map.put(prog, out, val), pc: pc + 2})}
+    end
   end
 
   defp eval({:input, _modes}, s = %State{pc: pc, input_fn: nil}) do
