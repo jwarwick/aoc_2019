@@ -17,4 +17,14 @@ defmodule Day16Test do
     assert Day16.fft("19617804207202209144916044189917", 100) |> String.slice(0..7) == "73745418"
     assert Day16.fft("69317163492948606335995924319873", 100) |> String.slice(0..7) == "52432133"
   end
+
+  test "part1" do
+    assert Day16.part1() == "42205986"
+  end
+
+  test "part2 examples" do
+    assert Day16.decode("03036732577212944063491565474664") == "84462026"
+    assert Day16.decode("02935109699940807407585447034323") == "78725270"
+    assert Day16.decode("03081770884921959731165446850517") == "53553731"
+  end
 end
