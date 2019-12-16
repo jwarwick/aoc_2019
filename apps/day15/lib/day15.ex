@@ -8,6 +8,14 @@ defmodule Day15 do
   """
   def part1 do
     Util.priv_file(:day15, "day15_input.txt")
-    |> Droid.explore()
+    |> Droid.explore(10_000)
+  end
+
+  @doc """
+  Find how many minutes are required to replenish the oxygen
+  """
+  def part2 do
+    Util.priv_file(:day15, "day15_input.txt")
+    |> Droid.replenish(1_000_000)
   end
 end

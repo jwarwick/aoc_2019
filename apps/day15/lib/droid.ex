@@ -3,7 +3,7 @@ defmodule Droid do
   Intcode Repair Droid
   """
 
-  defstruct map: %{{0, 0} => :empty}, loc: {0, 0}, last_attempt: nil, oxygen: nil, steps: 0
+  defstruct map: %{{0, 0} => :empty}, loc: {0, 0}, last_attempt: nil, oxygen: nil, steps: 0, max_steps: 1
 
   def print({map, loc}) do
     pts = Map.keys(map)
@@ -31,16 +31,41 @@ defmodule Droid do
   defp print_char(:oxygen), do: "O"
   defp print_char(:droid), do: "D"
 
+
+  @doc """
+  Compute the time to replenish the oxygen
+  """
+  def replenish(str, steps) do
+    result = build_map(str, steps)
+    {g, map, _dist} = shortest_path({result.map, result.oxygen})
+    print({map, result.oxygen})
+    step(g, [result.oxygen], Graph.num_vertices(g), 0)
+  end
+
+  defp step(_graph, replenished, needed, cnt) when length(replenished) == needed, do: cnt
+  defp step(graph, replenished, needed, cnt) do
+    neighbors = Enum.map(replenished, &(Graph.out_neighbors(graph, &1)))
+                |> List.flatten(replenished)
+                |> Enum.uniq()
+    step(graph, neighbors, needed, cnt+1)
+  end
+
   @doc """
   Build a map of the space
   """
-  def explore(str) do
-    {:ok, _pid} = Agent.start_link(fn -> %Droid{} end, name: __MODULE__)
+  def explore(str, steps) do
+    result = build_map(str, steps)
+    {_g, _map, dist} = shortest_path({result.map, result.oxygen})
+    dist
+  end
+
+  defp build_map(str, steps) do
+    {:ok, _pid} = Agent.start_link(fn -> %Droid{max_steps: steps} end, name: __MODULE__)
     code = Intcode.load(str)
     Intcode.run(code, [], &movement/0, &status/1)
-    result = Agent.get(__MODULE__, fn state -> {state.map, state.oxygen} end)
+    result = Agent.get(__MODULE__, fn state -> state end)
     Agent.stop(__MODULE__)
-    shortest_path(result)
+    result
   end
 
   defp shortest_path({map, goal}) do
@@ -52,7 +77,7 @@ defmodule Droid do
         |> add_edges(MapSet.to_list(nodes), nodes)
 
     path = Graph.get_shortest_path(g, {0, 0}, goal)
-    Enum.count(path) - 1
+    {g, map, Enum.count(path) - 1}
   end
 
   defp add_edges(g, [], _nodes), do: g
@@ -66,9 +91,8 @@ defmodule Droid do
   end
 
   def movement do
-    {curr, steps} = Agent.get(__MODULE__, fn state -> {{state.map, state.loc}, state.steps} end)
-    if steps >= 100_000 do
-      print(curr)
+    {curr, steps, max} = Agent.get(__MODULE__, fn state -> {{state.map, state.loc}, state.steps, state.max_steps} end)
+    if steps >= max do
       :halt
     else
       {next, dir} = get_next_move(curr)
