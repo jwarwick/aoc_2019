@@ -4,7 +4,7 @@ defmodule Day18 do
   """
 
   defmodule Maze do
-    defstruct map: %{}, start: {0,0}
+    defstruct map: %{}, start: []
   end
 
   @doc """
@@ -17,13 +17,88 @@ defmodule Day18 do
   end
 
   @doc """
+  Shortest path the multi-chamber maze that collects all the keys
+  """
+  def part2 do
+    Util.priv_file(:day18, "day18_part2_input.txt")
+    |> File.read!()
+    |> multi_shortest_path()
+  end
+
+  @doc """
+  Return the shortest path through the multi-chamber maze
+  """
+  def multi_shortest_path(str) do
+    maze = parse(str)
+    key_cnt = Map.values(maze.map) |> Enum.filter(fn {t, _v, _n} -> t == :key end) |> Enum.count()
+    starts = List.to_tuple(maze.start)
+    visited = MapSet.new([{starts, MapSet.new()}])
+    q = :queue.from_list([{starts, 0, MapSet.new()}])
+    multi_reachable(maze.map, key_cnt, visited, q)
+  end
+
+  defp multi_reachable(map, num_keys, visited, queue) do
+    {{:value, {starts, depth, keys}}, queue} = :queue.out(queue)
+    if MapSet.size(keys) == num_keys do
+      depth
+    else
+      neighbors = Enum.reduce(0..3, [], fn (i, acc) -> [neighbor_combos(map, i, starts) | acc] end) |> List.flatten()
+
+
+      {new_v, new_q} = Enum.reduce(neighbors, {visited, queue},
+                                   fn (locs, acc = {v, q}) ->
+                                     loc_list = Tuple.to_list(locs)
+                                     cond do
+                                       MapSet.member?(visited, {locs, keys}) ->
+                                         acc
+                                       !Enum.all?(loc_list, &(unlocked(map, keys, &1))) ->
+                                         acc
+                                       true ->
+                                         new_keys = Enum.reduce(loc_list, keys, &(add_keys(map, &2, &1)))
+                                         if !MapSet.member?(visited, {locs, new_keys}) do
+                                           {MapSet.put(v, {locs, new_keys}), :queue.in({locs, depth+1, new_keys}, q)}
+                                         else
+                                           acc
+                                         end
+                                     end
+                                   end)
+      multi_reachable(map, num_keys, new_v, new_q)
+    end
+  end
+
+  defp unlocked(map, keys, loc) do
+    {type, val, _neigh} = Map.get(map, loc)
+    type != :door || MapSet.member?(keys, val)
+  end
+
+  defp add_keys(map, keys, loc) do
+    {type, val, _neigh} = Map.get(map, loc)
+    if type == :key do
+      MapSet.put(keys, val)
+    else
+      keys
+    end
+  end
+
+  defp neighbor_combos(map, idx, locs) do
+    curr = elem(locs, idx)
+    {_type, _val, neigh} = Map.get(map, curr)
+    Enum.reduce(neigh,
+                [],
+                fn (l, acc) ->
+                  [put_elem(locs, idx, l) | acc]
+                end)
+  end
+
+  @doc """
   Return the shortest path through the maze
   """
   def shortest_path(str) do
     maze = parse(str)
+    start = hd(maze.start)
     key_cnt = Map.values(maze.map) |> Enum.filter(fn {t, _v, _n} -> t == :key end) |> Enum.count()
-    visited = MapSet.new([{maze.start, MapSet.new()}])
-    q = :queue.from_list([{maze.start, 0, MapSet.new()}])
+    visited = MapSet.new([{start, MapSet.new()}])
+    q = :queue.from_list([{start, 0, MapSet.new()}])
     reachable(maze.map, key_cnt, visited, q)
   end
 
@@ -98,7 +173,7 @@ defmodule Day18 do
   defp parse_entry(loc, ?., acc), do: add_valid(loc, {:space, nil}, acc)
   defp parse_entry(loc, ?@, acc) do
     new = add_valid(loc, {:space, nil}, acc)
-    %Maze{new | start: loc}
+    %Maze{new | start: [loc | new.start]}
   end
   defp parse_entry(loc, val, acc) do
     type = if <<val>> == String.upcase(<<val>>), do: :door, else: :key
@@ -112,7 +187,7 @@ defmodule Day18 do
     {{min_x, max_x}, {min_y, max_y}} = bounds(maze.map)
     for y <- min_y..max_y do
       for x <- min_x..max_x do
-        if maze.start == {x,y} do
+        if {x, y} in maze.start do
           IO.write('@')
         else
           IO.write(char(Map.get(maze.map, {x, y}, {:wall, nil, []})))
