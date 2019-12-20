@@ -31,6 +31,10 @@ defmodule Day20Test do
     assert Day20.path(@ex1, "AA", "ZZ") == 23
   end
 
+  test "part2 ex1" do
+    assert Day20.recursive_path(@ex1, "AA", "ZZ") == 26
+  end
+
 
   @ex2 """
                      A

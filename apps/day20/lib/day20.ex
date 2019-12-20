@@ -13,6 +13,26 @@ defmodule Day20 do
   end
 
   @doc """
+  Recursive maze steps from AA to ZZ
+  """
+  def part2 do
+    Util.priv_file(:day20, "day20_input.txt")
+    |> File.read!()
+    |> recursive_path("AA", "ZZ")
+  end
+
+  @doc """
+  Compute recursive path length in a map
+  """
+  def path(str, start, goal) do
+    {links, map} = parse(str)
+    start = String.to_charlist(start) |> Enum.sort()
+    goal = String.to_charlist(goal) |> Enum.sort()
+    start_v = Map.get(links, start) |> elem(1)
+    goal_v = Map.get(links, goal) |> elem(1)
+  end
+
+  @doc """
   Compute path length in a map
   """
   def path(str, start, goal) do
