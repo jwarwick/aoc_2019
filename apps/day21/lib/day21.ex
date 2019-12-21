@@ -3,14 +3,6 @@ defmodule Day21 do
   AoC 2019, Day 21 - Springdroid Adventure
   """
 
-  @doc """
-  Determine amount of hull damage
-  """
-  def part1 do
-    Util.priv_file(:day21, "day21_input.txt")
-    |> hull_damage()
-  end
-
   @script """
   NOT C T
   AND D T
@@ -18,13 +10,50 @@ defmodule Day21 do
   NOT A T
   OR T J
   """
-  def hull_damage(path) do
-    prog = Intcode.load(path)
-    Intcode.run(prog, String.to_charlist(@script <> "WALK\n"), nil, &ascii_output/1)
+
+  @doc """
+  Determine amount of hull damage
+  """
+  def part1 do
+    hull_damage(@script, "WALK")
+  end
+
+  @script2 """
+  NOT T T
+  AND D T
+  AND H T
+  OR T J
+  OR A T
+  AND B T
+  AND C T
+  AND D T
+  NOT T T
+  AND T J
+  NOT A T
+  OR T J
+  """
+
+  @doc """
+  Determine amount of hull damage using extended sensors
+  """
+  def part2 do
+    hull_damage(@script2, "RUN")
+  end
+
+  def permutations(sensors \\ "ABCDEFGHI") do
+    for ins <- ["NOT", "AND", "OR"], x <- String.graphemes(sensors <> "TJ"), y <- ["T", "J"] do
+      "#{ins} #{x} #{y}\n"
+    end
+  end
+
+  def hull_damage(script, cmd) do
+    prog = Util.priv_file(:day21, "day21_input.txt")
+           |> Intcode.load()
+    Intcode.run(prog, String.to_charlist(script <> cmd <> "\n"), nil, &ascii_output/1)
     receive do
       v -> v
     after
-      250 -> :error
+      0 -> :error
     end
   end
 
