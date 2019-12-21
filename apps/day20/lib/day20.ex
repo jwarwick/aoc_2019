@@ -24,13 +24,71 @@ defmodule Day20 do
   @doc """
   Compute recursive path length in a map
   """
-  def path(str, start, goal) do
+  def recursive_path(str, start, goal) do
     {links, map} = parse(str)
-    start = String.to_charlist(start) |> Enum.sort()
-    goal = String.to_charlist(goal) |> Enum.sort()
+    start = String.to_charlist(start)
+    goal = String.to_charlist(goal)
     start_v = Map.get(links, start) |> elem(1)
     goal_v = Map.get(links, goal) |> elem(1)
+    b = bounds(map)
+    bfs(map, b, {goal_v, 0}, :queue.from_list([{{start_v, 0}, 0}]), MapSet.new([{start_v, 0}]))
   end
+
+  defp bounds(map) do
+    pts = Map.keys(map)
+    x = Enum.map(pts, fn {x, _y} -> x end) |> Enum.min_max()
+    y = Enum.map(pts, fn {_x, y} -> y end) |> Enum.min_max()
+    {x, y}
+  end
+
+  defp bfs(map, b, goal, q, visited) do
+    {{:value, {target = {loc, depth}, steps}}, q} = :queue.out(q)
+    if target == goal do
+      steps
+    else
+      {new_q, new_visited} = recursive_neighbors(map, b, q, visited, loc, depth, steps)
+      bfs(map, b, goal, new_q, new_visited)
+    end
+  end
+
+  defp recursive_neighbors(map, b, q, visited, loc, depth, steps) do
+    {new_q, new_v} = add_link({q, visited}, map, b, depth, loc, steps)
+
+    get_neigh(map, loc)
+    |> Enum.filter(&(first_level(&1, depth, b)))
+    |> Enum.filter(fn {loc, _rest} -> !MapSet.member?(visited, {loc, depth}) end)
+    |> Enum.map(fn {loc, _type} -> {loc, depth} end)
+    |> Enum.reduce({new_q, new_v},
+                   fn (item, {new_q, new_v}) ->
+                     {:queue.in({item, steps+1}, new_q), MapSet.put(new_v, item)}
+                   end)
+  end
+
+  defp add_link(curr, map, b, depth, loc, steps), do: add_link(curr, b, depth, {loc, Map.get(map, loc)}, steps)
+
+  defp add_link(curr, _b, _depth, {_loc, {:space, _, _}}, _steps), do: curr
+  defp add_link(curr, _b, _depth, {_loc, {:link, _, nil}}, _steps), do: curr
+  defp add_link(curr = {q, v}, {{min_x, max_x}, {min_y, max_y}}, depth, {{x, y}, {:link, _str, link}}, steps) do
+    depth = if x == min_x || x == max_x || y == min_y || y == max_y do
+      depth - 1
+    else
+      depth + 1
+    end
+    n = {link, depth}
+    if MapSet.member?(v, n) do
+      curr
+    else
+      {:queue.in({n, steps+1}, q), MapSet.put(v, n)}
+    end
+  end
+
+  defp first_level({{x, y}, {:link, str, _link}}, 0, {{min_x, max_x}, {min_y, max_y}}) do
+    str in ['AA', 'ZZ'] || (x != min_x && x != max_x && y != min_y && y != max_y)
+  end
+  defp first_level({_loc, {:link, str, _link}}, _depth, _b) do
+    str not in ['AA', 'ZZ']
+  end
+  defp first_level(_v, _d, _b), do: true
 
   @doc """
   Compute path length in a map
@@ -38,8 +96,8 @@ defmodule Day20 do
   def path(str, start, goal) do
     {links, map} = parse(str)
     g = make_graph(map)
-    start = String.to_charlist(start) |> Enum.sort()
-    goal = String.to_charlist(goal) |> Enum.sort()
+    start = String.to_charlist(start)
+    goal = String.to_charlist(goal)
     start_v = Map.get(links, start) |> elem(1)
     goal_v = Map.get(links, goal) |> elem(1)
     path = Graph.get_shortest_path(g, start_v, goal_v)
@@ -151,19 +209,25 @@ defmodule Day20 do
                              {str, loc1, loc2} = Map.get(links, str)
                              other_loc = if loc1 == k, do: loc2, else: loc1
                              Map.put(acc, k, {:link, str, other_loc})
-                             else
-                               Map.put(acc, k, v)
+                           else
+                             Map.put(acc, k, v)
                            end
                          end)
 
     {links, map}
   end
 
-  defp node_val([{_, c1}, {_, c2}, {loc, "."}]) do
-    {loc, String.to_charlist(c1 <> c2) |> Enum.sort()}
+  defp node_val([{{x, _}, c1}, {{x, _}, c2}, {loc, "."}]) do
+    {loc, String.to_charlist(c1 <> c2)}
   end
-  defp node_val([{loc, "."}, {_, c1}, {_, c2}]) do
-    {loc, String.to_charlist(c2 <> c1) |> Enum.sort()}
+  defp node_val([{loc, "."}, {{x, _}, c1}, {{x, _}, c2}]) do
+    {loc, String.to_charlist(c1 <> c2)}
+  end
+  defp node_val([{{_, y}, c1}, {{_, y}, c2}, {loc, "."}]) do
+    {loc, String.to_charlist(c1 <> c2)}
+  end
+  defp node_val([{loc, "."}, {{_, y}, c1}, {{_, y}, c2}]) do
+    {loc, String.to_charlist(c1 <> c2)}
   end
 
   defp get_neigh(map, {x, y}) do

@@ -206,4 +206,4 @@ In your maze, when accounting for recursion, how many steps does it take to get 
 
 Although it hasn't changed, you can still get your puzzle input.
 
-Answer: **
+Answer: **5214**
