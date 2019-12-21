@@ -59,4 +59,58 @@ defmodule Day18Test do
   test "ex5" do
     assert Day18.shortest_path(@ex5) == 81
   end
+
+  @part2_ex1 """
+  #######
+  #a.#Cd#
+  ##@#@##
+  #######
+  ##@#@##
+  #cB#Ab#
+  #######
+  """
+  test "ex6" do
+    assert Day18.multi_shortest_path(@part2_ex1) == 8
+  end
+
+  @part2_ex2 """
+  ###############
+  #d.ABC.#.....a#
+  ######@#@######
+  ###############
+  ######@#@######
+  #b.....#.....c#
+  ###############
+  """
+  test "ex7" do
+    assert Day18.multi_shortest_path(@part2_ex2) == 24
+  end
+
+  @part2_ex3 """
+  #############
+  #DcBa.#.GhKl#
+  #.###@#@#I###
+  #e#d#####j#k#
+  ###C#@#@###J#
+  #fEbA.#.FgHi#
+  #############
+  """
+  test "ex8" do
+    assert Day18.multi_shortest_path(@part2_ex3) == 32
+  end
+
+  @part2_ex4 """
+  #############
+  #g#f.D#..h#l#
+  #F###e#E###.#
+  #dCba@#@BcIJ#
+  #############
+  #nK.L@#@G...#
+  #M###N#H###.#
+  #o#m..#i#jk.#
+  #############
+  """
+  test "ex9" do
+    assert Day18.multi_shortest_path(@part2_ex4) == 72
+  end
 end
