@@ -249,4 +249,4 @@ After updating your map and using the remote-controlled robots, what is the fewe
 
 Although it hasn't changed, you can still get your puzzle input.
 
-Answer: **
+Answer: **1540**

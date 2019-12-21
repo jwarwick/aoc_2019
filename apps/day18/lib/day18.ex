@@ -31,38 +31,55 @@ defmodule Day18 do
   def multi_shortest_path(str) do
     maze = parse(str)
     key_cnt = Map.values(maze.map) |> Enum.filter(fn {t, _v, _n} -> t == :key end) |> Enum.count()
-    starts = List.to_tuple(maze.start)
-    visited = MapSet.new([{starts, MapSet.new()}])
-    q = :queue.from_list([{starts, 0, MapSet.new()}])
+    visited = Enum.map(maze.start, &({&1, MapSet.new()}))
+              |> MapSet.new()
+    q = Enum.map(maze.start, &({&1, maze.start -- [&1], 0, MapSet.new()}))
+        |> :queue.from_list()
     multi_reachable(maze.map, key_cnt, visited, q)
   end
 
   defp multi_reachable(map, num_keys, visited, queue) do
-    {{:value, {starts, depth, keys}}, queue} = :queue.out(queue)
+    # IO.puts "\n\nQueue: #{inspect :queue.to_list(queue)}"
+    {{:value, {curr, rest, steps, keys}}, queue} = :queue.out(queue)
     if MapSet.size(keys) == num_keys do
-      depth
+      steps
     else
-      neighbors = Enum.reduce(0..3, [], fn (i, acc) -> [neighbor_combos(map, i, starts) | acc] end) |> List.flatten()
+      n = neighbors(map, curr)
+      # IO.puts "Neighbors: #{inspect n}"
 
-
-      {new_v, new_q} = Enum.reduce(neighbors, {visited, queue},
-                                   fn (locs, acc = {v, q}) ->
-                                     loc_list = Tuple.to_list(locs)
+      {new_v, new_q} = Enum.reduce(n, {visited, queue},
+                                   fn (loc, acc = {v, q}) ->
+                                     # IO.puts "N: #{inspect loc}"
                                      cond do
-                                       MapSet.member?(visited, {locs, keys}) ->
+                                       MapSet.member?(visited, {loc, keys}) ->
+                                         # IO.puts "\tAlready visited"
                                          acc
-                                       !Enum.all?(loc_list, &(unlocked(map, keys, &1))) ->
+                                       !unlocked(map, keys, loc) ->
+                                         # IO.puts "\tDoor locked"
                                          acc
                                        true ->
-                                         new_keys = Enum.reduce(loc_list, keys, &(add_keys(map, &2, &1)))
-                                         if !MapSet.member?(visited, {locs, new_keys}) do
-                                           {MapSet.put(v, {locs, new_keys}), :queue.in({locs, depth+1, new_keys}, q)}
-                                         else
-                                           acc
-                                         end
+                                         # IO.puts "\tValid loc"
+                                         new_keys = add_keys(map, keys, loc)
+                                         # IO.puts "\tKeys: #{inspect new_keys}"
+                                         add_combos(new_keys, v, q, loc, rest, steps)
                                      end
                                    end)
       multi_reachable(map, num_keys, new_v, new_q)
+    end
+  end
+
+  defp add_combos(keys, visited, queue, curr, [a, b, c], steps) do
+    add_combo({visited, queue}, keys, steps, curr, [a, b, c])
+    |> add_combo(keys, steps, a, [curr, b, c])
+    |> add_combo(keys, steps, b, [a, curr, c])
+    |> add_combo(keys, steps, c, [a, b, curr])
+  end
+
+  defp add_combo({v, q}, keys, steps, curr, rest) do
+    if !MapSet.member?(v, {curr, keys}) do
+      {MapSet.put(v, {curr, keys}), :queue.in({curr, rest, steps+1, keys}, q)}
+    else
+      {v, q}
     end
   end
 
@@ -78,16 +95,6 @@ defmodule Day18 do
     else
       keys
     end
-  end
-
-  defp neighbor_combos(map, idx, locs) do
-    curr = elem(locs, idx)
-    {_type, _val, neigh} = Map.get(map, curr)
-    Enum.reduce(neigh,
-                [],
-                fn (l, acc) ->
-                  [put_elem(locs, idx, l) | acc]
-                end)
   end
 
   @doc """
