@@ -9,6 +9,7 @@ defmodule Day22Test do
   deal into new stack
   deal into new stack
   """
+  |> Day22.load()
 
   test "ex1" do
     assert Day22.shuffle(@ex1, @test_deck ) == [0, 3, 6, 9, 2, 5, 8, 1, 4, 7]
@@ -19,6 +20,8 @@ defmodule Day22Test do
   deal with increment 7
   deal into new stack
   """
+  |> Day22.load()
+
   test "ex2" do
     assert Day22.shuffle(@ex2, @test_deck ) == [3, 0, 7, 4, 1, 8, 5, 2, 9, 6]
   end
@@ -28,6 +31,8 @@ defmodule Day22Test do
   deal with increment 9
   cut -2
   """
+  |> Day22.load()
+
   test "ex3" do
     assert Day22.shuffle(@ex3, @test_deck ) == [6, 3, 0, 7, 4, 1, 8, 5, 2, 9]
   end
@@ -44,11 +49,13 @@ defmodule Day22Test do
   deal with increment 3
   cut -1
   """
+  |> Day22.load()
+
   test "ex4" do
     assert Day22.shuffle(@ex4, @test_deck ) == [9, 2, 5, 8, 1, 4, 7, 0, 3, 6]
   end
 
   test "neg cut" do
-    assert Day22.shuffle("cut -4", @test_deck) == [6, 7, 8, 9, 0, 1, 2, 3, 4, 5]
+    assert Day22.shuffle("cut -4" |> Day22.load(), @test_deck) == [6, 7, 8, 9, 0, 1, 2, 3, 4, 5]
   end
 end
