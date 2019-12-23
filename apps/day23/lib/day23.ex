@@ -12,10 +12,27 @@ defmodule Day23 do
     |> spawn_network()
   end
 
+  @doc """
+  Find first Y value delivered to address 0 twice
+  """
+  def part2 do
+    Util.priv_file(:day23, "day23_input.txt")
+    |> Intcode.load()
+    |> nat_network()
+  end
+
+  def nat_network(prog) do
+    {:ok, _pid} = NAT.start_link()
+    for addr <- 0..49 do
+      {:ok, pid} = Task.start(fn -> Process.sleep(250) && Intcode.run(prog, [addr], &read_message/0, &NAT.send_message/1) end)
+      NAT.add_address(addr, pid)
+    end
+    Process.sleep(30000)
+  end
+
   def spawn_network(prog) do
     {:ok, _pid} = Agent.start_link(fn -> %{} end, name: __MODULE__)
     {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :mapper)
-    {:ok, _pid} = Agent.start_link(fn -> %{} end, name: :inverse)
     for addr <- 0..49 do
       {:ok, pid} = Task.start(fn -> Process.sleep(250) && Intcode.run(prog, [addr], &read_message/0, &(send_message(self(), &1))) end)
       Agent.update(:mapper, fn state -> Map.put(state, addr, pid) end)

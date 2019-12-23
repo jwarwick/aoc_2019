@@ -34,4 +34,4 @@ Monitor packets released to the computer at address 0 by the NAT. What is the fi
 
 Although it hasn't changed, you can still get your puzzle input.
 
-Answer: **
+Answer: **14370**
