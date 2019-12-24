@@ -6,15 +6,25 @@ defmodule Day22 do
   @doc """
   Shuffle deck from instructions, return position of card 2019
   """
-  def part1 do
+  def part1_orig do
     input_file()
     |> load()
     |> shuffle()
     |> Enum.find_index(&(&1 == 2019))
   end
 
-  @big_deck_cnt 119315717514047
-  @shuffle_cnt  101741582076661
+  @doc """
+  Shuffle deck from instructions, return position of card 2019
+  """
+  def part1 do
+    input_file()
+    |> load()
+    |> shuffle_funs()
+    |> apply([2019])
+  end
+
+  # @big_deck_cnt 119315717514047
+  # @shuffle_cnt  101741582076661
   @doc """
   Shuffle the extended deck, multiple times. What card is in position 2020?
   """
@@ -34,15 +44,22 @@ defmodule Day22 do
     |> Enum.map(&parse/1)
   end
 
-  def find_cycle(steps, first \\ @factory_deck, deck \\ @factory_deck, cnt \\ 1) do
-    s = shuffle(steps, deck)
-    IO.inspect cnt
-    if Enum.at(s, 2020) == 2020 do
-      cnt
-    else
-      find_cycle(steps, first, s, cnt+1)
-    end
+  def normalize(val, deck_len) when val < 0 do
+    deck_len - normalize(-val, deck_len)
   end
+
+  def normalize(val, deck_len), do: rem(val, deck_len)
+
+  def shuffle_funs(steps, deck \\ @factory_deck) do
+    deck_len = Enum.count(deck)
+    {a, b} = Enum.reduce(steps, {1, 0}, &(lin_fun(&1, &2, deck_len)))
+
+    fn x -> normalize(a*x + b, deck_len) end
+  end
+  
+  def lin_fun({:new_stack, nil}, {a, b}, len), do: {normalize(-a, len), normalize(-b - 1, len)}
+  def lin_fun({:cut, val}, {a, b}, len), do: {a, normalize(b-val, len)}
+  def lin_fun({:increment, val}, {a, b}, len), do: {normalize(a*val, len), normalize(b*val, len)}
 
   def parse(<<"deal into new stack">>), do: {:new_stack, nil}
   def parse(<<"cut ", cnt::binary>>), do: {:cut, String.to_integer(cnt)}
