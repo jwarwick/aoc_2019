@@ -1,6 +1,12 @@
 defmodule Day22 do
   @moduledoc """
   AoC 2019, Day 22 - Slam Shuffle
+
+  The math for Part 2 was beyond me. Much inspiration was taken from:
+  https://www.reddit.com/r/adventofcode/comments/ee0rqi/2019_day_22_solutions/fbnkaju/?context=3
+  https://przybyl.io/solution-explanation-to-day-22-of-advent-of-code-2019.html
+  https://github.com/alexander-yu/adventofcode/blob/master/problems_2019/22.py
+  https://github.com/sasa1977/aoc/blob/master/lib/2019/201922.ex
   """
 
   @doc """
@@ -23,13 +29,16 @@ defmodule Day22 do
     |> apply([2019])
   end
 
-  # @big_deck_cnt 119315717514047
-  # @shuffle_cnt  101741582076661
+  @big_deck_cnt 119315717514047
+  @shuffle_cnt  101741582076661
   @doc """
   Shuffle the extended deck, multiple times. What card is in position 2020?
   """
   def part2 do
-    :nope
+    input_file()
+    |> load()
+    |> inv_shuffle_funs(big_deck_cnt)
+    |> apply([2020])
   end
 
   @factory_deck Enum.into(0..10_006, [])
@@ -49,6 +58,25 @@ defmodule Day22 do
   end
 
   def normalize(val, deck_len), do: rem(val, deck_len)
+
+  def inv_shuffle_funs(steps, deck_len, shuffle_cnt) do
+    {a, b} = Enum.reverse(steps)
+             |> Enum.reduce({1, 0}, &(inv_lin_fun(&1, &2, deck_len)))
+
+    fn card -> normalize(pow(a, shuffle_cnt, deck_len) * card + b * (pow(a, shuffle_cnt, deck_len) - 1) * inverse(deck_len, a-1)) end
+    # return (
+    #     pow(a, rounds, n) * card +
+    #     b * (pow(a, rounds, n) - 1) * inverse(n, a - 1)
+    # ) % n
+  end
+
+  def inv_lin_fun({:new_stack, nil}, {a, b}, len), do: {normalize(-a, len), normalize(-b - 1, len)}
+  def inv_lin_fun({:cut, val}, {a, b}, len), do: {a, normalize(b+val, len)}
+  def inv_lin_fun({:increment, val}, {a, b}, len), do: {normalize(a*inverse(val, len), len), normalize(b*inverse(val,len), len)}
+
+  def inverse(val, len) do
+    1
+  end
 
   def shuffle_funs(steps, deck \\ @factory_deck) do
     deck_len = Enum.count(deck)
