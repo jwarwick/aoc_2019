@@ -3,11 +3,13 @@ defmodule Day22 do
   AoC 2019, Day 22 - Slam Shuffle
 
   The math for Part 2 was beyond me. Much inspiration was taken from:
+  https://github.com/bjorng/advent-of-code-2019/blob/master/day22/lib/day22.ex
   https://www.reddit.com/r/adventofcode/comments/ee0rqi/2019_day_22_solutions/fbnkaju/?context=3
   https://przybyl.io/solution-explanation-to-day-22-of-advent-of-code-2019.html
   https://github.com/alexander-yu/adventofcode/blob/master/problems_2019/22.py
   https://github.com/sasa1977/aoc/blob/master/lib/2019/201922.ex
   """
+  use Bitwise
 
   @doc """
   Shuffle deck from instructions, return position of card 2019
@@ -37,8 +39,8 @@ defmodule Day22 do
   def part2 do
     input_file()
     |> load()
-    |> inv_shuffle_funs(big_deck_cnt)
-    |> apply([2020])
+    |> inv_shuffle_funs(@big_deck_cnt)
+    |> apply([2020, @shuffle_cnt])
   end
 
   @factory_deck Enum.into(0..10_006, [])
@@ -59,23 +61,35 @@ defmodule Day22 do
 
   def normalize(val, deck_len), do: rem(val, deck_len)
 
-  def inv_shuffle_funs(steps, deck_len, shuffle_cnt) do
+  def inv_shuffle_funs(steps, deck_len) do
     {a, b} = Enum.reverse(steps)
              |> Enum.reduce({1, 0}, &(inv_lin_fun(&1, &2, deck_len)))
 
-    fn card -> normalize(pow(a, shuffle_cnt, deck_len) * card + b * (pow(a, shuffle_cnt, deck_len) - 1) * inverse(deck_len, a-1)) end
-    # return (
-    #     pow(a, rounds, n) * card +
-    #     b * (pow(a, rounds, n) - 1) * inverse(n, a - 1)
-    # ) % n
+      fn (card, shuffle_cnt) ->
+        normalize(pow(a, shuffle_cnt, deck_len) * card +
+          b * (pow(a, shuffle_cnt, deck_len) - 1) * Modular.inverse(a-1, deck_len),
+          deck_len)
+      end
+  end
+
+  def pow(x, p, m, res \\ 1)
+  def pow(_, 0, _, res), do: res
+  def pow(x, p, m, res) do
+    next_x = rem(x * x, m)
+    next_p = bsr(p, 1)
+    case band(p, 1) do
+      0 ->
+        pow(next_x, next_p, m, rem(res, m))
+      1 ->
+        pow(next_x, next_p, m, rem(res*x, m))
+    end
   end
 
   def inv_lin_fun({:new_stack, nil}, {a, b}, len), do: {normalize(-a, len), normalize(-b - 1, len)}
   def inv_lin_fun({:cut, val}, {a, b}, len), do: {a, normalize(b+val, len)}
-  def inv_lin_fun({:increment, val}, {a, b}, len), do: {normalize(a*inverse(val, len), len), normalize(b*inverse(val,len), len)}
-
-  def inverse(val, len) do
-    1
+  def inv_lin_fun({:increment, val}, {a, b}, len) do
+    {normalize(a*Modular.inverse(val, len), len),
+      normalize(b*Modular.inverse(val,len), len)}
   end
 
   def shuffle_funs(steps, deck \\ @factory_deck) do

@@ -4,6 +4,10 @@ defmodule Day22Test do
 
   @test_deck Enum.into(0..9, [])
 
+  test "part2" do
+    assert Day22.part2() == 12545532223512
+  end
+
   test "part1 as list" do
     assert Day22.part1_orig() == 2306
   end
@@ -109,9 +113,5 @@ defmodule Day22Test do
 
   test "neg cut" do
     assert Day22.shuffle("cut -4" |> Day22.load(), @test_deck) == [6, 7, 8, 9, 0, 1, 2, 3, 4, 5]
-  end
-
-  test "part2" do
-    assert Day22.part2() == :huh
   end
 end
